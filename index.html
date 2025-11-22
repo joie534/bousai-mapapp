@@ -83,13 +83,17 @@
             fill: #ffffff;
         }
 
-        /* 中央の投稿ボタン */
-        .nav-item.center-btn {
-            transform: translateY(-20px);
-            /* さらに10px上げる */
+        /* フローティング投稿ボタン（右下） */
+        #floating-post-btn {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            z-index: 100;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .nav-item.center-btn .circle {
+        #floating-post-btn .circle {
             width: 60px;
             height: 60px;
             background: linear-gradient(135deg, #FF0055, #FF3366);
@@ -98,15 +102,14 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 4px 15px rgba(255, 0, 85, 0.4);
-            margin-bottom: 20px;
-            /* 間隔を狭く */
         }
 
-        .nav-item.center-btn svg {
+        #floating-post-btn svg {
             width: 30px;
             height: 30px;
-            margin-bottom: 0;
+            fill: white;
         }
+
 
         /* クロスヘア */
         #crosshair {
@@ -160,6 +163,15 @@
     <div id="map"></div>
     <div id="crosshair"></div>
 
+    <!-- フローティング投稿ボタン -->
+    <div id="floating-post-btn">
+        <div class="circle">
+            <svg viewBox="0 0 24 24">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
+        </div>
+    </div>
+
     <div class="footer-nav">
         <div class="nav-item" id="nav-home">
             <svg viewBox="0 0 24 24">
@@ -174,14 +186,7 @@
             </svg>
             <span>リスト</span>
         </div>
-        <div class="nav-item center-btn" id="nav-post">
-            <div class="circle">
-                <svg viewBox="0 0 24 24">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                </svg>
-            </div>
-            <span>投稿</span>
-        </div>
+
         <div class="nav-item" id="nav-search">
             <svg viewBox="0 0 24 24">
                 <path
@@ -276,7 +281,7 @@
                 .addTo(map);
         }
 
-        document.getElementById('nav-post').addEventListener('click', async () => {
+        document.getElementById('floating-post-btn').addEventListener('click', async () => {
             const center = map.getCenter();
             const lng = center.lng;
             const lat = center.lat;

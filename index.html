@@ -8,7 +8,7 @@
     <title>防犯マップ</title>
 
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#141414">
+    <meta name="theme-color" content="#0a0e17">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icon-180.png">
@@ -29,7 +29,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: rgba(20, 20, 20, 0.95);
+            background-color: rgba(10, 14, 23, 0.95);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             overscroll-behavior: none;
         }
@@ -52,7 +52,7 @@
             left: 0;
             width: 100%;
             z-index: 10;
-            background-color: rgba(20, 20, 20, 0.95);
+            background-color: rgba(10, 14, 23, 0.95);
             padding: 0;
             padding-top: 8px;
             padding-bottom: 8px;
@@ -225,7 +225,7 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const MAPTILER_KEY = 'UbOOOjdSN26zP8niTJvU';
-        const STYLE_URL = `https://api.maptiler.com/maps/jp-mierune-dark/style.json?key=${MAPTILER_KEY}`;
+        const STYLE_URL = `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}`;
 
         const map = new maplibregl.Map({
             container: 'map',
@@ -250,6 +250,15 @@
         map.addControl(geolocateControl, 'top-right');
 
         map.on('load', async () => {
+            // ミッドナイト・ブルー テーマへの色調整
+            map.setPaintProperty('background', 'background-color', 'hsl(220, 40%, 8%)');
+            map.setPaintProperty('water', 'fill-color', 'hsl(215, 50%, 15%)');
+
+            // 道路の色調整（存在する場合のみ適用）
+            if (map.getLayer('road')) {
+                map.setPaintProperty('road', 'line-color', 'hsl(220, 10%, 25%)');
+            }
+
             loadPins();
             map.addSource('force-3d-source', {
                 url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
@@ -268,13 +277,22 @@
                 'id': '3d-buildings-forced',
                 'source': 'force-3d-source',
                 'source-layer': 'building',
+                'filter': ['==', 'extrude', 'true'],
                 'type': 'fill-extrusion',
                 'minzoom': 15,
                 'paint': {
-                    'fill-extrusion-color': '#2a2a2a',
-                    'fill-extrusion-height': ['get', 'render_height'],
-                    'fill-extrusion-base': ['get', 'render_min_height'],
-                    'fill-extrusion-opacity': 0.9
+                    'fill-extrusion-color': 'hsl(220, 30%, 20%)', // 建物の色
+                    'fill-extrusion-height': [
+                        "interpolate", ["linear"], ["zoom"],
+                        15, 0,
+                        15.05, ["get", "height"]
+                    ],
+                    'fill-extrusion-base': [
+                        "interpolate", ["linear"], ["zoom"],
+                        15, 0,
+                        15.05, ["get", "min_height"]
+                    ],
+                    'fill-extrusion-opacity': 0.7 // 不透明度
                 }
             }, labelLayerId);
         });

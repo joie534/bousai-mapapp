@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* ◆ 2. HTML / BODY を外側スクロール禁止にして “高さ揺れ” を封殺 */
+        /* 資料対策: 外側スクロールの禁止 [cite: 71-76] */
         html,
         body {
             height: 100%;
@@ -26,10 +26,9 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            /* スクロール禁止 */
+            /* 高さ揺れを封殺 */
             background-color: #000000;
             overscroll-behavior: none;
-            /* バウンス禁止 */
         }
 
         #map {
@@ -37,12 +36,11 @@
             top: 0;
             left: 0;
             width: 100%;
-            /* heightはJSで制御するためCSSでは指定しない、または100%にしておく */
-            height: 100%;
+            /* heightはJSでpx指定するため、CSSでは指定しない（または初期値） */
             z-index: 0;
         }
 
-        /* UIパーツ */
+        /* --- UIパーツ（変更なし） --- */
         #crosshair {
             position: fixed;
             top: 50%;
@@ -109,14 +107,13 @@
     <div id="post-btn">＋</div>
 
     <script>
-        // PWA Service Worker
+        // PWA登録
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('./service-worker.js');
             });
         }
 
-        // Supabase & MapTiler Config
         const SUPABASE_URL = 'https://aflahjkzuozhptawwxlu.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmbGFoamt6dW96aHB0YXd3eGx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MDk1MTAsImV4cCI6MjA3OTI4NTUxMH0.n_XnS3eFC2yqhjfjKcfA55K1BupzXh0lpAYv95N3dew';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -135,39 +132,48 @@
             attributionControl: false
         });
 
-        // ◆ 4. MapLibre の初期化後にも resize を強制
-        // グローバル変数に入れてアクセスしやすくする
-        window.map = map;
-
         map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
 
+        // window.map に割り当ててグローバルからアクセス可能にする
+        window.map = map;
+
         // -----------------------------------------------------------
-        // ◆ 1. マップコンテナの高さを JS で実測固定（最強の手段）
+        // ◆ 資料 Case 4 準拠：JSによる高さ強制とリサイズ処理 [cite: 60-68]
         // -----------------------------------------------------------
         function fixMapHeight() {
+            // 実測値を取得 [cite: 63]
             const h = window.innerHeight;
             const el = document.getElementById('map');
+
+            // 高さをピクセル単位で強制固定 [cite: 65]
             el.style.height = `${h}px`;
 
+            // MapLibreにサイズ変更を通知して描き直させる [cite: 66]
             if (window.map) {
                 window.map.resize();
             }
         }
 
-        // イベントリスナー登録
+        // リサイズイベントにバインド [cite: 67]
         window.addEventListener('resize', fixMapHeight);
-        window.addEventListener('orientationchange', fixMapHeight);
 
-        // 即時実行
+        // 回転時の対策：50ms~100msの遅延を入れる 
+        window.addEventListener('orientationchange', () => {
+            setTimeout(fixMapHeight, 100);
+        });
+
+        // 初期実行
         fixMapHeight();
 
-        // 初期化直後のズレ対策（念押し）
+        // ◆ 資料 Case 5 対策：初期ロード時の高さズレ防止 [cite: 82-85]
+        // iOSが最初の1フレームだけ計算を間違えるため、少し遅れて再実行
         setTimeout(() => {
             fixMapHeight();
         }, 100);
+        // 念のためもう一度
         setTimeout(() => {
             fixMapHeight();
-        }, 500); // 少し遅れてもう一度やるのが確実
+        }, 500);
         // -----------------------------------------------------------
 
         map.on('load', async () => {

@@ -10,13 +10,11 @@
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icon-180.png">
 
     <script src="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.css" rel="stylesheet" />
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -31,44 +29,112 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #f3ecec;
+            background-color: #000000;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             overscroll-behavior: none;
-            /* バウンス禁止 */
         }
 
-        /* 地図エリア（全画面） */
+        /* ★★★ Claude案：フッター下の隙間を埋める専用パーツ ★★★ */
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            /* セーフエリア（ホームバー）の高さを自動取得 */
+            height: env(safe-area-inset-bottom, 0px);
+            /* フッターと同じ色で塗りつぶす */
+            background-color: rgba(20, 20, 20, 0.95);
+            z-index: 9;
+            /* フッター(10)より下、地図(0)より上 */
+            pointer-events: none;
+        }
+
         #map {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100%;
             height: 100%;
-            /* 箱は100%でOK */
             z-index: 0;
         }
 
-        /* ★★★ 【追加】Canvasを物理的に引き伸ばすハック ★★★ */
+        /* Canvasハック（念のため残す） */
         .maplibregl-canvas {
             height: 100% !important;
         }
 
-        /* iOS PWA環境のみ、CSSで物理的に +50px 引き伸ばす */
         @supports (-webkit-touch-callout: none) {
             .maplibregl-canvas {
                 height: calc(100% + 60px) !important;
-                /* 余裕を見て60px */
             }
         }
 
-        /* iOS PWA専用：フッターの余白調整（追加） */
-        @supports (-webkit-touch-callout: none) {
-            #footer-nav {
-                padding-bottom: max(8px, calc(env(safe-area-inset-bottom) - 10px));
-            }
+        /* フッターナビゲーション */
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+            background-color: rgba(20, 20, 20, 0.95);
+
+            /* 上の余白 */
+            padding-top: 12px;
+
+            /* 下の余白：ホームバーの高さだけ確保 */
+            padding-bottom: env(safe-area-inset-bottom);
+
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.5);
         }
 
-        /* クロスヘア（照準） */
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 10px;
+            text-decoration: none;
+            width: 100%;
+            padding-bottom: 4px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            fill: #ffffff;
+        }
+
+        /* 中央の投稿ボタン */
+        .nav-item.center-btn {
+            transform: translateY(-20px);
+        }
+
+        .nav-item.center-btn .circle {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #FF0055, #FF3366);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(255, 0, 85, 0.4);
+        }
+
+        .nav-item.center-btn svg {
+            width: 30px;
+            height: 30px;
+            margin-bottom: 0;
+        }
+
+        /* クロスヘア */
         #crosshair {
             position: fixed;
             top: 50%;
@@ -77,7 +143,7 @@
             height: 20px;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            z-index: 10;
+            z-index: 5;
         }
 
         #crosshair::before,
@@ -102,77 +168,12 @@
             height: 20px;
         }
 
-        /* フッターナビゲーション修正版 */
-        #footer-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: auto;
-            background-color: rgba(20, 20, 20, 0.95);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-            z-index: 10;
-            /* padding-top: 3px; */
-            /* ↓ 修正：padding-bottomを小さめに調整 */
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) * 0.5);
-        }
-
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 10px;
-            cursor: pointer;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .nav-item svg {
-            width: 24px;
-            height: 24px;
-            margin-bottom: 2px;
-            /* 間隔を詰める */
-            fill: currentColor;
-        }
-
-        /* 中央の投稿ボタン（フッターから大胆にはみ出す） */
-        .nav-item.center {
-            position: relative;
-            transform: translateY(-18px);
-            /* 位置微調整 */
-        }
-
-        .nav-item.center .icon-circle {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, #FF0055, #FF3366);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(255, 0, 85, 0.4);
-        }
-
-        .nav-item.center svg {
-            width: 32px;
-            height: 32px;
-            fill: white;
-            margin-bottom: 0;
-        }
-
-        /* MapLibreのコントロール位置 */
+        /* コントロール位置 */
         .maplibregl-ctrl-top-right {
-            top: 60px;
+            top: 50px;
             right: 10px;
         }
 
-        /* クレジットを左上に移動（フッター回避） */
         .maplibregl-ctrl-bottom-left {
             top: 10px;
             left: 10px;
@@ -185,7 +186,7 @@
     <div id="map"></div>
     <div id="crosshair"></div>
 
-    <div id="footer-nav">
+    <div class="footer-nav">
         <div class="nav-item" id="nav-home">
             <svg viewBox="0 0 24 24">
                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
@@ -199,13 +200,12 @@
             </svg>
             <span>リスト</span>
         </div>
-        <div class="nav-item center" id="nav-post">
-            <div class="icon-circle">
+        <div class="nav-item center-btn" id="nav-post">
+            <div class="circle">
                 <svg viewBox="0 0 24 24">
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                 </svg>
             </div>
-            <span>投稿</span>
         </div>
         <div class="nav-item" id="nav-search">
             <svg viewBox="0 0 24 24">
@@ -224,7 +224,6 @@
     </div>
 
     <script>
-        // PWA登録
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('./service-worker.js');
@@ -241,8 +240,8 @@
         const map = new maplibregl.Map({
             container: 'map',
             style: STYLE_URL,
-            center: [139.58, 35.54],
-            zoom: 13,
+            center: [139.633, 35.537],
+            zoom: 16,
             maxZoom: 22,
             minZoom: 4,
             pitch: 0,
@@ -252,29 +251,22 @@
 
         map.addControl(new maplibregl.AttributionControl({ compact: true }), 'top-left');
 
-        // ★★★ JSによる補正（Canvas直接操作） ★★★
-        map.on('load', () => {
+        // GPS
+        const geolocateControl = new maplibregl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: true,
+            showUserHeading: true,
+            showCompass: false
+        });
+        map.addControl(geolocateControl, 'top-right');
+
+        map.on('load', async () => {
             loadPins();
             map.addSource('force-3d-source', {
                 url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                 type: 'vector'
             });
 
-            // iOS PWA判定
-            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-            const isPWA = window.navigator.standalone === true;
-
-            if (isIOS && isPWA) {
-                // Canvas要素を特定して直接操作
-                const canvas = document.querySelector('.maplibregl-canvas');
-                if (canvas) {
-                    // 高さを強制的に+60pxする（CSSだけでなくJSでも念押し）
-                    canvas.style.height = 'calc(100% + 60px)';
-                    map.resize();
-                }
-            }
-
-            // 3D建物の追加
             const layers = map.getStyle().layers;
             let labelLayerId;
             for (let i = 0; i < layers.length; i++) {
@@ -296,6 +288,8 @@
                     'fill-extrusion-opacity': 0.9
                 }
             }, labelLayerId);
+
+            setTimeout(() => { geolocateControl.trigger(); }, 500);
         });
 
         async function loadPins() {

@@ -152,9 +152,9 @@
         }
 
         .maplibregl-ctrl-bottom-left {
-            top: 10px;
+            bottom: 80px;
+            /* フッターの上 */
             left: 10px;
-            bottom: auto;
         }
     </style>
 </head>
@@ -265,8 +265,6 @@
                     'fill-extrusion-opacity': 0.9
                 }
             }, labelLayerId);
-
-            setTimeout(() => { geolocateControl.trigger(); }, 500);
         });
 
         async function loadPins() {

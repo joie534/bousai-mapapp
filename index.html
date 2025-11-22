@@ -60,6 +60,13 @@
             }
         }
 
+        /* iOS PWA専用：フッターの余白調整（追加） */
+        @supports (-webkit-touch-callout: none) {
+            #footer-nav {
+                padding-bottom: max(8px, calc(env(safe-area-inset-bottom) - 10px));
+            }
+        }
+
         /* クロスヘア（照準） */
         #crosshair {
             position: fixed;
@@ -94,7 +101,7 @@
             height: 20px;
         }
 
-        /* フッターナビゲーション（黒帯隠蔽） */
+        /* フッターナビゲーション修正版 */
         #footer-nav {
             position: fixed;
             bottom: 0;
@@ -108,7 +115,8 @@
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
             z-index: 10;
             padding-top: 3px;
-            padding-bottom: env(safe-area-inset-bottom);
+            /* ↓ 修正：padding-bottomを小さめに調整 */
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) * 0.5);
         }
 
         .nav-item {

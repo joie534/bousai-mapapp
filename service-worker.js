@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bouhan-map-v2025-11-22-footer-v31';
+const CACHE_NAME = 'bouhan-map-v2025-11-22-footer-v35';
 
 // ★重要：ここには画像と設定ファイルだけを入れる。
 // HTMLファイル（./ や index.html）は絶対に入れない。

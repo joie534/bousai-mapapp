@@ -1,9 +1,8 @@
-// ★バージョンを上げて、古いバグったキャッシュを捨てさせる
-const CACHE_NAME = 'bouhan-map-v23';
+const CACHE_NAME = 'bouhan-map-recovery';
 
+// ★重要：ここには画像と設定ファイルだけを入れる。
+// HTMLファイル（./ や index.html）は絶対に入れない。
 const urlsToCache = [
-    './',
-    // './index.html', ←【削除】これを消してください！これがリダイレクトの犯人です。
     './manifest.json',
     './icon-180.png',
     './icon-192.png',
@@ -19,7 +18,6 @@ self.addEventListener('install', function (event) {
     );
 });
 
-// 古いキャッシュを消す処理（そのまま）
 self.addEventListener('activate', function (event) {
     event.waitUntil(
         caches.keys().then(function (cacheNames) {
@@ -35,17 +33,16 @@ self.addEventListener('activate', function (event) {
 });
 
 self.addEventListener('fetch', function (event) {
+    // HTMLページへのアクセス（navigate）は、キャッシュを見ずに必ずネットに取りに行く
+    // これでリダイレクトエラーは100%回避できる
+    if (event.request.mode === 'navigate') {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(function (response) {
-                // リダイレクトされたレスポンスは使わないようにする安全策
-                if (response && response.redirected) {
-                    return fetch(event.request);
-                }
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request);
+                return response || fetch(event.request);
             })
     );
 });

@@ -1,60 +1,27 @@
-// バージョンを更新（キャッシュを強制クリアさせるため）
-const CACHE_NAME = 'bouhan-map-v31';
-
-// キャッシュするファイルリスト
-// ★重要：ここに './' や 'index.html' を入れないでください！
-const urlsToCache = [
-    './manifest.json',
-    './icon-180.png',
-    './icon-192.png',
-    './icon-512.png'
-];
-
-// インストール処理
-self.addEventListener('install', function (event) {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(function (cache) {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache);
-    })
-    );
-});
-
-// 古いキャッシュの削除処理
-self.addEventListener('activate', function (event) {
-    event.waitUntil(
-        caches.keys().then(function (cacheNames) {
-            return Promise.all(
-                cacheNames.map(function (cacheName) {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-            }
-        })
-            );
-    })
-    );
-});
-
-// フェッチ（通信）処理
-self.addEventListener('fetch', function (event) {
-    // ★ここが修正点：HTMLページへのアクセス（navigate）は、
-    // キャッシュを一切見ずに、必ずネットワークへ取りに行かせる
-    if (event.request.mode === 'navigate') {
-        event.respondWith(fetch(event.request));
-        return;
-    }
-    // それ以外のファイル（画像など）はキャッシュがあれば使う
-    event.respondWith(
-        caches.match(event.request)
-            .then(function (response) {
-        // キャッシュにあればそれを返す
-                if (response) {
-                    return response;
+{
+    "name": "防犯マップ3D",
+    "short_name": "防犯マップ",
+    "start_url": ".",
+    "scope": ".",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "./icon-180.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        },
+        {
+            "src": "./icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "./icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
         }
-        // なければネットワークに取りに行く
-                return fetch(event.request);
-    })
-    );
-});
+    ]
+}

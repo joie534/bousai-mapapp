@@ -36,16 +36,9 @@
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            width: 100vw;
-            height: 100vh;
-            /* コンテナは通常の画面高さ */
+            width: 100%;
+            /* heightはJSで強制制御するためCSSでは指定しない */
             z-index: 0;
-        }
-
-        /* ★★★ 決定的な修正：MapLibreのCanvas要素を下に伸ばす ★★★ */
-        .maplibregl-canvas {
-            height: calc(100% + 50px) !important;
-            /* iOSのホームインジケーター分（50px）を下に伸ばす */
         }
 
         /* --- UIパーツ --- */
@@ -143,44 +136,43 @@
             attributionControl: false
         });
 
-        // グローバル変数化（リサイズ用）
+        // グローバル変数化
         window.map = map;
         map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
 
         // -----------------------------------------------------------
-        // ◆ iOS PWA専用：Canvas要素を下に伸ばして黒帯を消す
+        // ◆ 最終決定版：物理スクリーンサイズで強制上書き
         // -----------------------------------------------------------
-        function fixCanvasForIOSPWA() {
-            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-            const isPWA = window.navigator.standalone === true;
+        function forceMapHeight() {
+            const mapEl = document.getElementById('map');
+            // 画面の物理的高さを取得（これが最強）
+            const screenHeight = window.screen.height;
 
-            if (isIOS && isPWA) {
-                const canvas = document.querySelector('.maplibregl-canvas');
-                if (canvas) {
-                    // iOSのホームインジケーター分（約40px）を追加
-                    canvas.style.height = 'calc(100% + 50px)';
-                    canvas.style.maxHeight = 'none'; // 最大高制限を解除
+            // 地図の高さを画面いっぱい（+余裕をもたせるなら +50px）に設定
+            // ここでは screen.height をそのまま使う
+            mapEl.style.height = `${screenHeight}px`;
 
-                    // MapLibreに再計算させる
-                    if (window.map) {
-                        window.map.resize();
-                    }
-                }
+            // リサイズ通知
+            if (window.map) {
+                window.map.resize();
             }
         }
 
-        // 画面サイズ変更時、向き変更時に再計算
-        window.addEventListener('resize', fixCanvasForIOSPWA);
+        // イベントリスナー
+        window.addEventListener('resize', forceMapHeight);
         window.addEventListener('orientationchange', () => {
-            setTimeout(fixCanvasForIOSPWA, 100);
+            setTimeout(forceMapHeight, 100);
         });
+
+        // 初期実行
+        forceMapHeight();
+        // ロード直後のズレ補正
+        setTimeout(forceMapHeight, 100);
+        setTimeout(forceMapHeight, 500);
         // -----------------------------------------------------------
 
         map.on('load', async () => {
             loadPins();
-
-            // iOS PWA用のCanvas修正を適用
-            fixCanvasForIOSPWA();
             map.addSource('force-3d-source', {
                 url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                 type: 'vector'

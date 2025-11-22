@@ -54,11 +54,12 @@
             z-index: 10;
             background-color: rgba(20, 20, 20, 0.95);
             padding: 0;
-            padding-bottom: env(safe-area-inset-bottom);
-            /* ホームバー領域まで背景を伸ばす */
+            min-height: calc(50px + env(safe-area-inset-bottom));
+            /* 背景だけ伸ばす */
             display: flex;
             justify-content: space-around;
-            align-items: center;
+            align-items: flex-start;
+            /* 上揃え */
             box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.5);
         }
 

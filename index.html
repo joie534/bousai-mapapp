@@ -105,12 +105,12 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            /* 中央揃え */
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
             z-index: 10;
-            /* 余計な計算をやめ、シンプルに */
-            padding-top: 12px;
-            padding-bottom: env(safe-area-inset-bottom);
+            padding-top: 6px;
+            /* padding削減 */
+            padding-bottom: calc(env(safe-area-inset-bottom) + 4px);
+            /* 最小限に */
         }
 
         .nav-item {
@@ -122,22 +122,23 @@
             color: #ffffff;
             font-size: 10px;
             cursor: pointer;
-            padding-bottom: 4px;
+            padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
 
         .nav-item svg {
             width: 24px;
             height: 24px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            /* 間隔を詰める */
             fill: currentColor;
         }
 
         /* 中央の投稿ボタン（フッターから大胆にはみ出す） */
         .nav-item.center {
             position: relative;
-            transform: translateY(-25px);
-            /* 位置調整 */
+            transform: translateY(-18px);
+            /* 位置微調整 */
         }
 
         .nav-item.center .icon-circle {

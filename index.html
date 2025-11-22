@@ -115,3 +115,127 @@
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('./service-worker.js');
             });
+        }
+
+        // Supabase設定
+        const SUPABASE_URL = 'https://aflahjkzuozhptawwxlu.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmbGFoamt6dW96aHB0YXd3eGx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MDk1MTAsImV4cCI6MjA3OTI4NTUxMH0.n_XnS3eFC2yqhjfjKcfA55K1BupzXh0lpAYv95N3dew';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // MapTiler設定
+        const MAPTILER_KEY = 'UbOOOjdSN26zP8niTJvU';
+        const STYLE_URL = `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`;
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: STYLE_URL,
+            center: [139.633, 35.537],
+            zoom: 16,
+            maxZoom: 22,
+            minZoom: 4,
+            pitch: 0,
+            attributionControl: false
+        });
+
+        // グローバル変数化（リサイズ用）
+        window.map = map;
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+
+        // -----------------------------------------------------------
+        // ◆ 最終手段：ブラウザ内寸ではなく「物理スクリーンサイズ」を使う
+        // -----------------------------------------------------------
+        function fixMapHeight() {
+            // 【ここが変更点】 innerHeight ではなく screen.height を使う
+            // これなら「下のバー」や「上の時計」を無視した、端末ガラス全体の高さを取れます
+            const h = window.screen.height;
+
+            const el = document.getElementById('map');
+
+            // 高さをピクセル単位で強制固定
+            el.style.height = `${h}px`;
+
+            // MapLibreにサイズ変更を通知して描き直させる
+            if (window.map) {
+                window.map.resize();
+            }
+        }
+
+        // イベントリスナー
+        window.addEventListener('resize', fixMapHeight);
+
+        // 回転時はタイミングがズレるので少し待つ
+        window.addEventListener('orientationchange', () => {
+            setTimeout(fixMapHeight, 100);
+        });
+
+        // 初期実行
+        fixMapHeight();
+
+        // 初期ロード時のズレ防止（ダメ押し）
+        setTimeout(fixMapHeight, 100);
+        setTimeout(fixMapHeight, 500);
+        // -----------------------------------------------------------
+
+        map.on('load', async () => {
+            loadPins();
+            map.addSource('force-3d-source', {
+                url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
+                type: 'vector'
+            });
+
+            const layers = map.getStyle().layers;
+            let labelLayerId;
+            for (let i = 0; i < layers.length; i++) {
+                if (layers[i].type === 'symbol' && layers[i].layout['text-field']) {
+                    labelLayerId = layers[i].id;
+                    break;
+                }
+            }
+
+            map.addLayer({
+                'id': '3d-buildings-forced',
+                'source': 'force-3d-source',
+                'source-layer': 'building',
+                'type': 'fill-extrusion',
+                'minzoom': 15,
+                'paint': {
+                    'fill-extrusion-color': '#2a2a2a',
+                    'fill-extrusion-height': ['get', 'render_height'],
+                    'fill-extrusion-base': ['get', 'render_min_height'],
+                    'fill-extrusion-opacity': 0.9
+                }
+            }, labelLayerId);
+        });
+
+        async function loadPins() {
+            const { data, error } = await supabaseClient.from('pins').select('*');
+            if (data) { data.forEach(pin => addPinToMap(pin)); }
+        }
+
+        function addPinToMap(pinData) {
+            new maplibregl.Marker({ color: "#FF0055" })
+                .setLngLat([pinData.lng, pinData.lat])
+                .setPopup(new maplibregl.Popup().setText(pinData.message))
+                .addTo(map);
+        }
+
+        document.getElementById('post-btn').addEventListener('click', async () => {
+            const center = map.getCenter();
+            const lng = center.lng;
+            const lat = center.lat;
+            const message = prompt("ここの場所の不審者情報を入力");
+            if (message) {
+                const { error } = await supabaseClient
+                    .from('pins').insert([{ lat, lng, message }]);
+                if (!error) {
+                    addPinToMap({ lat, lng, message });
+                    alert("投稿しました！");
+                } else {
+                    alert("エラーが発生しました");
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

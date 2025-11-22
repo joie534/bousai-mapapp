@@ -55,10 +55,18 @@
             background-color: rgba(20, 20, 20, 0.95);
             padding-top: 6px;
             padding-bottom: 4px;
+            /* Safari用 */
             display: flex;
             justify-content: space-around;
             align-items: center;
             box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* PWAモード時は下余白0 */
+        @media (display-mode: standalone) {
+            .footer-nav {
+                padding-bottom: 0;
+            }
         }
 
         .nav-item {

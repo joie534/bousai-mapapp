@@ -1,8 +1,9 @@
-// ★ここを 'v1' から 'v2' に変えるだけで、スマホが強制更新されます
-const CACHE_NAME = 'bouhan-map-v22'; // ←ここを変える
+// ★バージョンを上げて、古いバグったキャッシュを捨てさせる
+const CACHE_NAME = 'bouhan-map-v23';
+
 const urlsToCache = [
     './',
-    './index.html',
+    // './index.html', ←【削除】これを消してください！これがリダイレクトの犯人です。
     './manifest.json',
     './icon-180.png',
     './icon-192.png',
@@ -18,7 +19,7 @@ self.addEventListener('install', function (event) {
     );
 });
 
-// 古いキャッシュを消す処理を追加（重要）
+// 古いキャッシュを消す処理（そのまま）
 self.addEventListener('activate', function (event) {
     event.waitUntil(
         caches.keys().then(function (cacheNames) {
@@ -37,6 +38,10 @@ self.addEventListener('fetch', function (event) {
     event.respondWith(
         caches.match(event.request)
             .then(function (response) {
+                // リダイレクトされたレスポンスは使わないようにする安全策
+                if (response && response.redirected) {
+                    return fetch(event.request);
+                }
                 if (response) {
                     return response;
                 }

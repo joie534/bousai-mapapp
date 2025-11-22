@@ -13,13 +13,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icon-180.png">
 
-
-
-    <!-- MapLibre -->
     <script src="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.css" rel="stylesheet" />
 
-    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -29,25 +25,39 @@
 
         html,
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
             width: 100%;
             height: 100%;
             overflow: hidden;
             background-color: #000000;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overscroll-behavior: none;
+            /* バウンス禁止 */
         }
 
-        /* 地図エリア（全画面、フッターの裏まで） */
+        /* 地図エリア（全画面） */
         #map {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            /* フッターの裏まで伸ばす */
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
             width: 100%;
+            height: 100%;
+            /* 箱は100%でOK */
             z-index: 0;
+        }
+
+        /* ★★★ 【追加】Canvasを物理的に引き伸ばすハック ★★★ */
+        .maplibregl-canvas {
+            height: 100% !important;
+        }
+
+        /* iOS PWA環境のみ、CSSで物理的に +50px 引き伸ばす */
+        @supports (-webkit-touch-callout: none) {
+            .maplibregl-canvas {
+                height: calc(100% + 60px) !important;
+                /* 余裕を見て60px */
+            }
         }
 
         /* クロスヘア（照準） */
@@ -94,9 +104,11 @@
             background-color: rgba(20, 20, 20, 0.95);
             display: flex;
             justify-content: space-around;
-            align-items: flex-start;
+            align-items: center;
+            /* 中央揃え */
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
             z-index: 10;
+            /* 余計な計算をやめ、シンプルに */
             padding-top: 12px;
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -106,12 +118,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             color: #ffffff;
             font-size: 10px;
             cursor: pointer;
-            padding: 4px 0 8px 0;
-            transition: color 0.2s;
+            padding-bottom: 4px;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -122,14 +133,11 @@
             fill: currentColor;
         }
 
-        .nav-item:active {
-            color: #FF0055;
-        }
-
         /* 中央の投稿ボタン（フッターから大胆にはみ出す） */
         .nav-item.center {
             position: relative;
             transform: translateY(-25px);
+            /* 位置調整 */
         }
 
         .nav-item.center .icon-circle {
@@ -151,27 +159,17 @@
             margin-bottom: 0;
         }
 
-        .nav-item.center span {
-            display: block;
-            /* ラベルを表示 */
-        }
-
-        /* MapLibreのコントロールボタンの位置調整 */
+        /* MapLibreのコントロール位置 */
         .maplibregl-ctrl-top-right {
             top: 60px;
-            /* y軸を下げる */
             right: 10px;
         }
 
-        .maplibregl-ctrl-top-left {
+        /* クレジットを左上に移動（フッター回避） */
+        .maplibregl-ctrl-bottom-left {
             top: 10px;
             left: 10px;
-        }
-
-        .maplibregl-ctrl-bottom-left {
-            bottom: 80px;
-            /* フッターの上 */
-            left: 10px;
+            bottom: auto;
         }
     </style>
 </head>
@@ -180,7 +178,6 @@
     <div id="map"></div>
     <div id="crosshair"></div>
 
-    <!-- フッターナビゲーション -->
     <div id="footer-nav">
         <div class="nav-item" id="nav-home">
             <svg viewBox="0 0 24 24">
@@ -227,60 +224,50 @@
             });
         }
 
-        // Supabase設定
         const SUPABASE_URL = 'https://aflahjkzuozhptawwxlu.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmbGFoamt6dW96aHB0YXd3eGx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MDk1MTAsImV4cCI6MjA3OTI4NTUxMH0.n_XnS3eFC2yqhjfjKcfA55K1BupzXh0lpAYv95N3dew';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // MapTiler設定
         const MAPTILER_KEY = 'UbOOOjdSN26zP8niTJvU';
         const STYLE_URL = `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`;
 
-        // 地図初期化
         const map = new maplibregl.Map({
             container: 'map',
             style: STYLE_URL,
-            center: [139.58, 35.54], // 横浜市都筑区・港北区の中間
+            center: [139.58, 35.54],
             zoom: 13,
             maxZoom: 22,
             minZoom: 4,
             pitch: 0,
             attributionControl: false,
-            // 横浜市港北区・都筑区に移動範囲を制限
-            maxBounds: [
-                [139.50, 35.45], // 南西
-                [139.68, 35.60]  // 北東
-            ]
+            maxBounds: [[139.50, 35.45], [139.68, 35.60]]
         });
 
-        // グローバル変数化
-        window.map = map;
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'top-left');
 
-        // コンパクトなクレジット表示（左下、フッターの上）
-        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
-
-        // GPS機能（現在地ボタン、コンパスなし）
-        const geolocateControl = new maplibregl.GeolocateControl({
-            positionOptions: {
-                enableHighAccuracy: true
-            },
-            trackUserLocation: true,
-            showUserHeading: true,
-            showCompass: false // コンパスを非表示
-        });
-        map.addControl(geolocateControl, 'top-right');
-
-        // 地図ロード時の処理
-        map.on('load', async () => {
-            // ピンを読み込む
+        // ★★★ JSによる補正（Canvas直接操作） ★★★
+        map.on('load', () => {
             loadPins();
-
-            // 3D建物レイヤーを追加
             map.addSource('force-3d-source', {
                 url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                 type: 'vector'
             });
 
+            // iOS PWA判定
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const isPWA = window.navigator.standalone === true;
+
+            if (isIOS && isPWA) {
+                // Canvas要素を特定して直接操作
+                const canvas = document.querySelector('.maplibregl-canvas');
+                if (canvas) {
+                    // 高さを強制的に+60pxする（CSSだけでなくJSでも念押し）
+                    canvas.style.height = 'calc(100% + 60px)';
+                    map.resize();
+                }
+            }
+
+            // 3D建物の追加
             const layers = map.getStyle().layers;
             let labelLayerId;
             for (let i = 0; i < layers.length; i++) {
@@ -289,7 +276,6 @@
                     break;
                 }
             }
-
             map.addLayer({
                 'id': '3d-buildings-forced',
                 'source': 'force-3d-source',
@@ -303,22 +289,13 @@
                     'fill-extrusion-opacity': 0.9
                 }
             }, labelLayerId);
-
-            // 初回のみ現在地に移動
-            setTimeout(() => {
-                geolocateControl.trigger();
-            }, 500);
         });
 
-        // ピン読み込み
         async function loadPins() {
             const { data, error } = await supabaseClient.from('pins').select('*');
-            if (data) {
-                data.forEach(pin => addPinToMap(pin));
-            }
+            if (data) { data.forEach(pin => addPinToMap(pin)); }
         }
 
-        // ピンを地図に追加
         function addPinToMap(pinData) {
             new maplibregl.Marker({ color: "#FF0055" })
                 .setLngLat([pinData.lng, pinData.lat])
@@ -326,13 +303,11 @@
                 .addTo(map);
         }
 
-        // 投稿ボタン（フッター中央）
         document.getElementById('nav-post').addEventListener('click', async () => {
             const center = map.getCenter();
             const lng = center.lng;
             const lat = center.lat;
             const message = prompt("不審者情報を入力してください");
-
             if (message) {
                 const { error } = await supabaseClient
                     .from('pins').insert([{ lat, lng, message }]);
@@ -343,23 +318,6 @@
                     alert("エラーが発生しました");
                 }
             }
-        });
-
-        // その他のナビゲーションボタン（今後実装）
-        document.getElementById('nav-home').addEventListener('click', () => {
-            alert('ホーム機能は今後実装予定です');
-        });
-
-        document.getElementById('nav-list').addEventListener('click', () => {
-            alert('リスト機能は今後実装予定です');
-        });
-
-        document.getElementById('nav-search').addEventListener('click', () => {
-            alert('検索機能は今後実装予定です');
-        });
-
-        document.getElementById('nav-settings').addEventListener('click', () => {
-            alert('設定機能は今後実装予定です');
         });
     </script>
 </body>

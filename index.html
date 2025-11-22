@@ -53,9 +53,8 @@
             width: 100%;
             z-index: 10;
             background-color: rgba(20, 20, 20, 0.95);
-            padding-top: 6px;
+            padding-top: 4px;
             padding-bottom: 4px;
-            /* Safari用 */
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -226,14 +225,13 @@
             maxBounds: [[139.50, 35.45], [139.68, 35.60]]
         });
 
-        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'top-left');
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
         // GPS
         const geolocateControl = new maplibregl.GeolocateControl({
             positionOptions: { enableHighAccuracy: true },
             trackUserLocation: true,
-            showUserHeading: true,
-            showCompass: false
+            showUserHeading: true
         });
         map.addControl(geolocateControl, 'top-right');
 

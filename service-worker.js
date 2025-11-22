@@ -1,5 +1,5 @@
 // ★ここを 'v1' から 'v2' に変えるだけで、スマホが強制更新されます
-const CACHE_NAME = 'bouhan-map-v18'; // ←ここを変える
+const CACHE_NAME = 'bouhan-map-v19'; // ←ここを変える
 const urlsToCache = [
     './',
     './index.html',

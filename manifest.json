@@ -1,9 +1,9 @@
 {
     "name": "防犯マップ3D",
     "short_name": "防犯マップ",
-    "start_url": ".",
+    "start_url": "./index.html",
     "scope": ".",
-    "display": "fullscreen",
+    "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#000000",
     "orientation": "portrait",
@@ -11,8 +11,7 @@
         {
             "src": "./icon-180.png",
             "sizes": "180x180",
-            "type": "image/png",
-            "purpose": "any maskable"
+            "type": "image/png"
         },
         {
             "src": "./icon-192.png",

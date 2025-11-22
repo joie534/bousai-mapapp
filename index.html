@@ -18,29 +18,31 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* 資料対策: 外側スクロールの禁止 [cite: 71-76] */
+        /* 全体の揺れや余白を完全に殺す設定 */
         html,
         body {
-            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
             width: 100%;
-            margin: 0;
-            padding: 0;
+            height: 100%;
             overflow: hidden;
-            /* 高さ揺れを封殺 */
             background-color: #000000;
             overscroll-behavior: none;
+            -webkit-text-size-adjust: 100%;
         }
 
+        /* 地図コンテナ */
         #map {
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: fixed !important;
+            /* 画面に鋲打ち */
+            top: 0 !important;
+            left: 0 !important;
             width: 100%;
-            /* heightはJSでpx指定するため、CSSでは指定しない（または初期値） */
+            /* 高さはJSで物理サイズを注入するため、CSSでは指定しない */
             z-index: 0;
         }
 
-        /* --- UIパーツ（変更なし） --- */
+        /* --- UIパーツ --- */
         #crosshair {
             position: fixed;
             top: 50%;
@@ -76,6 +78,7 @@
 
         #post-btn {
             position: fixed;
+            /* ボタンだけはホームバーを避ける計算を残す */
             bottom: calc(20px + env(safe-area-inset-bottom));
             right: 20px;
             width: 60px;
@@ -112,130 +115,3 @@
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('./service-worker.js');
             });
-        }
-
-        const SUPABASE_URL = 'https://aflahjkzuozhptawwxlu.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmbGFoamt6dW96aHB0YXd3eGx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MDk1MTAsImV4cCI6MjA3OTI4NTUxMH0.n_XnS3eFC2yqhjfjKcfA55K1BupzXh0lpAYv95N3dew';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        const MAPTILER_KEY = 'UbOOOjdSN26zP8niTJvU';
-        const STYLE_URL = `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`;
-
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: STYLE_URL,
-            center: [139.633, 35.537],
-            zoom: 16,
-            maxZoom: 22,
-            minZoom: 4,
-            pitch: 0,
-            attributionControl: false
-        });
-
-        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-
-        // window.map に割り当ててグローバルからアクセス可能にする
-        window.map = map;
-
-        // -----------------------------------------------------------
-        // ◆ 資料 Case 4 準拠：JSによる高さ強制とリサイズ処理 [cite: 60-68]
-        // -----------------------------------------------------------
-        function fixMapHeight() {
-            // 実測値を取得 [cite: 63]
-            const h = window.innerHeight;
-            const el = document.getElementById('map');
-
-            // 高さをピクセル単位で強制固定 [cite: 65]
-            el.style.height = `${h}px`;
-
-            // MapLibreにサイズ変更を通知して描き直させる [cite: 66]
-            if (window.map) {
-                window.map.resize();
-            }
-        }
-
-        // リサイズイベントにバインド [cite: 67]
-        window.addEventListener('resize', fixMapHeight);
-
-        // 回転時の対策：50ms~100msの遅延を入れる 
-        window.addEventListener('orientationchange', () => {
-            setTimeout(fixMapHeight, 100);
-        });
-
-        // 初期実行
-        fixMapHeight();
-
-        // ◆ 資料 Case 5 対策：初期ロード時の高さズレ防止 [cite: 82-85]
-        // iOSが最初の1フレームだけ計算を間違えるため、少し遅れて再実行
-        setTimeout(() => {
-            fixMapHeight();
-        }, 100);
-        // 念のためもう一度
-        setTimeout(() => {
-            fixMapHeight();
-        }, 500);
-        // -----------------------------------------------------------
-
-        map.on('load', async () => {
-            loadPins();
-            map.addSource('force-3d-source', {
-                url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
-                type: 'vector'
-            });
-
-            const layers = map.getStyle().layers;
-            let labelLayerId;
-            for (let i = 0; i < layers.length; i++) {
-                if (layers[i].type === 'symbol' && layers[i].layout['text-field']) {
-                    labelLayerId = layers[i].id;
-                    break;
-                }
-            }
-
-            map.addLayer({
-                'id': '3d-buildings-forced',
-                'source': 'force-3d-source',
-                'source-layer': 'building',
-                'type': 'fill-extrusion',
-                'minzoom': 15,
-                'paint': {
-                    'fill-extrusion-color': '#2a2a2a',
-                    'fill-extrusion-height': ['get', 'render_height'],
-                    'fill-extrusion-base': ['get', 'render_min_height'],
-                    'fill-extrusion-opacity': 0.9
-                }
-            }, labelLayerId);
-        });
-
-        async function loadPins() {
-            const { data, error } = await supabaseClient.from('pins').select('*');
-            if (data) { data.forEach(pin => addPinToMap(pin)); }
-        }
-
-        function addPinToMap(pinData) {
-            new maplibregl.Marker({ color: "#FF0055" })
-                .setLngLat([pinData.lng, pinData.lat])
-                .setPopup(new maplibregl.Popup().setText(pinData.message))
-                .addTo(map);
-        }
-
-        document.getElementById('post-btn').addEventListener('click', async () => {
-            const center = map.getCenter();
-            const lng = center.lng;
-            const lat = center.lat;
-            const message = prompt("ここの場所の不審者情報を入力");
-            if (message) {
-                const { error } = await supabaseClient
-                    .from('pins').insert([{ lat, lng, message }]);
-                if (!error) {
-                    addPinToMap({ lat, lng, message });
-                    alert("投稿しました！");
-                } else {
-                    alert("エラーが発生しました");
-                }
-            }
-        });
-    </script>
-</body>
-
-</html>

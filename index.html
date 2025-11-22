@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>防犯マップ</title>
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="./icon-180.png">
+
+    <script src="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* ◆ 2. HTML / BODY を外側スクロール禁止にして “高さ揺れ” を封殺 */
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            /* スクロール禁止 */
+            background-color: #000000;
+            overscroll-behavior: none;
+            /* バウンス禁止 */
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* heightはJSで制御するためCSSでは指定しない、または100%にしておく */
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* UIパーツ */
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            box-shadow: 0 0 2px #000;
+        }
+
+        #crosshair::before {
+            top: 9px;
+            left: 0;
+            width: 20px;
+            height: 2px;
+        }
+
+        #crosshair::after {
+            top: 0;
+            left: 9px;
+            width: 2px;
+            height: 20px;
+        }
+
+        #post-btn {
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #FF0055;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #post-btn:active {
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="crosshair"></div>
+    <div id="post-btn">＋</div>
+
+    <script>
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('./service-worker.js');
+            });
+        }
+
+        // Supabase & MapTiler Config
+        const SUPABASE_URL = 'https://aflahjkzuozhptawwxlu.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmbGFoamt6dW96aHB0YXd3eGx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MDk1MTAsImV4cCI6MjA3OTI4NTUxMH0.n_XnS3eFC2yqhjfjKcfA55K1BupzXh0lpAYv95N3dew';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const MAPTILER_KEY = 'UbOOOjdSN26zP8niTJvU';
+        const STYLE_URL = `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`;
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: STYLE_URL,
+            center: [139.633, 35.537],
+            zoom: 16,
+            maxZoom: 22,
+            minZoom: 4,
+            pitch: 0,
+            attributionControl: false
+        });
+
+        // ◆ 4. MapLibre の初期化後にも resize を強制
+        // グローバル変数に入れてアクセスしやすくする
+        window.map = map;
+
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+
+        // -----------------------------------------------------------
+        // ◆ 1. マップコンテナの高さを JS で実測固定（最強の手段）
+        // -----------------------------------------------------------
+        function fixMapHeight() {
+            const h = window.innerHeight;
+            const el = document.getElementById('map');
+            el.style.height = `${h}px`;
+
+            if (window.map) {
+                window.map.resize();
+            }
+        }
+
+        // イベントリスナー登録
+        window.addEventListener('resize', fixMapHeight);
+        window.addEventListener('orientationchange', fixMapHeight);
+
+        // 即時実行
+        fixMapHeight();
+
+        // 初期化直後のズレ対策（念押し）
+        setTimeout(() => {
+            fixMapHeight();
+        }, 100);
+        setTimeout(() => {
+            fixMapHeight();
+        }, 500); // 少し遅れてもう一度やるのが確実
+        // -----------------------------------------------------------
+
+        map.on('load', async () => {
+            loadPins();
+            map.addSource('force-3d-source', {
+                url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
+                type: 'vector'
+            });
+
+            const layers = map.getStyle().layers;
+            let labelLayerId;
+            for (let i = 0; i < layers.length; i++) {
+                if (layers[i].type === 'symbol' && layers[i].layout['text-field']) {
+                    labelLayerId = layers[i].id;
+                    break;
+                }
+            }
+
+            map.addLayer({
+                'id': '3d-buildings-forced',
+                'source': 'force-3d-source',
+                'source-layer': 'building',
+                'type': 'fill-extrusion',
+                'minzoom': 15,
+                'paint': {
+                    'fill-extrusion-color': '#2a2a2a',
+                    'fill-extrusion-height': ['get', 'render_height'],
+                    'fill-extrusion-base': ['get', 'render_min_height'],
+                    'fill-extrusion-opacity': 0.9
+                }
+            }, labelLayerId);
+        });
+
+        async function loadPins() {
+            const { data, error } = await supabaseClient.from('pins').select('*');
+            if (data) { data.forEach(pin => addPinToMap(pin)); }
+        }
+
+        function addPinToMap(pinData) {
+            new maplibregl.Marker({ color: "#FF0055" })
+                .setLngLat([pinData.lng, pinData.lat])
+                .setPopup(new maplibregl.Popup().setText(pinData.message))
+                .addTo(map);
+        }
+
+        document.getElementById('post-btn').addEventListener('click', async () => {
+            const center = map.getCenter();
+            const lng = center.lng;
+            const lat = center.lat;
+            const message = prompt("ここの場所の不審者情報を入力");
+            if (message) {
+                const { error } = await supabaseClient
+                    .from('pins').insert([{ lat, lng, message }]);
+                if (!error) {
+                    addPinToMap({ lat, lng, message });
+                    alert("投稿しました！");
+                } else {
+                    alert("エラーが発生しました");
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

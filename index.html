@@ -266,47 +266,44 @@
                     labelLayerId = id;
                 }
 
-                // 1. 背景・地表 (Land/Background)
+                // 1. 背景 (Background)
                 if (id === 'background') {
-                    map.setPaintProperty(id, 'background-color', '#f8f8f8');
+                    map.setPaintProperty(id, 'background-color', '#f3f4f6');
                 }
 
                 // 2. 水域 (Water)
                 if (id.includes('water') && type === 'fill') {
-                    map.setPaintProperty(id, 'fill-color', '#e6e9ec');
+                    map.setPaintProperty(id, 'fill-color', '#e5e7eb');
                 }
 
-                // 3. 建物・土地利用 (Building/Landuse)
+                // 3. 建物 (Building)
                 if (sourceLayer === 'building' || id.includes('building')) {
                     if (type === 'fill') {
-                        map.setPaintProperty(id, 'fill-color', '#eeeeee');
+                        map.setPaintProperty(id, 'fill-color', '#e5e7eb');
+                        map.setPaintProperty(id, 'fill-opacity', 0.6);
                         // 枠線がある場合は薄くする
                         if (map.getPaintProperty(id, 'fill-outline-color')) {
-                            map.setPaintProperty(id, 'fill-outline-color', '#e0e0e0');
+                            map.setPaintProperty(id, 'fill-outline-color', '#e5e7eb');
                         }
                     }
                 }
 
+                // 土地利用（公園など）も背景に馴染ませる
                 if (sourceLayer === 'landuse' || id.includes('landuse') || id.includes('park') || id.includes('green')) {
                     if (type === 'fill') {
-                        map.setPaintProperty(id, 'fill-color', '#f0f0f0');
+                        map.setPaintProperty(id, 'fill-color', '#f3f4f6'); // 背景色と同じにする
                     }
                 }
 
                 // 4. 道路 (Roads)
                 if (sourceLayer === 'transportation') {
-                    // マイナーロード判定
-                    const isMinor = id.includes('minor') || id.includes('path') || id.includes('service') || id.includes('track') || id.includes('footway') || id.includes('pedestrian');
-
-                    if (isMinor) {
-                        if (type === 'line') {
-                            map.setPaintProperty(id, 'line-color', '#f0f0f0');
-                        }
-                    } else {
-                        // 主要道路 (Major)
+                    if (type === 'line') {
+                        // 道路の縁取り (Casing)
                         if (id.includes('casing')) {
-                            map.setPaintProperty(id, 'line-color', '#e0e0e0');
-                        } else if (type === 'line') {
+                            map.setPaintProperty(id, 'line-color', '#e5e5e5');
+                        }
+                        // 道路の埋め色 (Fill)
+                        else {
                             map.setPaintProperty(id, 'line-color', '#ffffff');
                         }
                     }
@@ -315,14 +312,14 @@
                 // 5. 文字ラベル (Labels/Text)
                 if (type === 'symbol') {
                     if (layer.layout && layer.layout['text-field']) {
-                        map.setPaintProperty(id, 'text-color', '#5f6368');
+                        map.setPaintProperty(id, 'text-color', '#6b7280');
                         map.setPaintProperty(id, 'text-halo-color', '#ffffff');
                         map.setPaintProperty(id, 'text-halo-width', 2);
                     }
                 }
             });
 
-            // --- 3D建物レイヤーの追加 (色を #eeeeee に変更) ---
+            // --- 3D建物レイヤーの追加 (色を #e5e7eb に変更) ---
             map.addSource('force-3d-source', {
                 url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                 type: 'vector'
@@ -336,7 +333,7 @@
                 'type': 'fill-extrusion',
                 'minzoom': 15,
                 'paint': {
-                    'fill-extrusion-color': '#eeeeee', // 指定色: #eeeeee
+                    'fill-extrusion-color': '#e5e7eb', // 指定色: #e5e7eb
                     'fill-extrusion-height': [
                         "interpolate", ["linear"], ["zoom"],
                         15, 0,
@@ -347,7 +344,7 @@
                         15, 0,
                         15.05, ["get", "min_height"]
                     ],
-                    'fill-extrusion-opacity': 0.8
+                    'fill-extrusion-opacity': 0.6 // 不透明度: 0.6
                 }
             }, labelLayerId);
         });

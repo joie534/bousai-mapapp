@@ -43,18 +43,18 @@
             width: 100%;
             height: 100%;
             z-index: 0;
+            background-color: #ffffff;
         }
 
-        /* 地図のキャンバス部分だけグレースケール化 */
-        #map .maplibregl-canvas-container,
-        #map .maplibregl-canvas {
+        /* ★重要: 地図の描画キャンバス「だけ」をグレースケール化 */
+        /* コンテナ(.maplibregl-canvas-container)にはかけないこと！マーカーが含まれるため */
+        canvas.maplibregl-canvas {
             filter: grayscale(100%) saturate(0%) !important;
         }
 
         /* ピン（マーカー）と現在地ドットはカラーを保持 */
         .maplibregl-marker,
-        .maplibregl-marker svg,
-        .maplibregl-marker path,
+        .custom-marker,
         .maplibregl-user-location-dot,
         .maplibregl-user-location-accuracy-circle {
             filter: none !important;
@@ -307,12 +307,12 @@
                 const type = layer.type;
                 const sourceLayer = layer['source-layer'];
 
-                // ラベルレイヤーIDの取得（3D建物レイヤーの挿入位置用）
+                // ラベルレイヤーIDの取得
                 if (!labelLayerId && type === 'symbol' && layer.layout && layer.layout['text-field']) {
                     labelLayerId = id;
                 }
 
-                // 1. 背景 (Background) - 完全な純白
+                // 1. 背景 (Background) - より明るく完全な純白
                 if (id === 'background') {
                     map.setPaintProperty(id, 'background-color', '#ffffff');
                     console.log('Background styled:', id);
@@ -419,7 +419,19 @@
         }
 
         function addPinToMap(pinData) {
-            new maplibregl.Marker({ color: "#FF0055" })
+            // カスタムHTMLマーカーを作成（グレースケールフィルターを回避）
+            const el = document.createElement('div');
+            el.className = 'custom-marker';
+            el.style.cssText = `
+                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="27" height="43" viewBox="0 0 27 43"><g fill-rule="nonzero"><g fill="%23FF0055"><path d="M13.5 0C6.044 0 0 6.044 0 13.5 0 23.625 13.5 43 13.5 43S27 23.625 27 13.5C27 6.044 20.956 0 13.5 0z"/></g><ellipse cx="13.5" cy="13.5" fill="%23FFF" rx="5.5" ry="5.5"/></g></svg>');
+                background-size: contain;
+                width: 27px;
+                height: 43px;
+                cursor: pointer;
+                filter: none !important;
+            `;
+
+            new maplibregl.Marker({ element: el })
                 .setLngLat([pinData.lng, pinData.lat])
                 .setPopup(new maplibregl.Popup().setText(pinData.message))
                 .addTo(map);

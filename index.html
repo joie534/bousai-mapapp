@@ -71,10 +71,10 @@
             padding: 0;
             padding-top: 8px;
             padding-bottom: 8px;
-            /* Safari用 */
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
+            /* Gridレイアウトに変更して5等分 */
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            align-items: end;
             box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
         }
 
@@ -91,12 +91,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #343333;
-            font-size: 12px;
-            font-weight: 700;
+            color: #666666;
+            font-size: 10px;
             line-height: 1;
             text-decoration: none;
             width: 100%;
+            height: 100%;
+            /* グリッドセルの高さを埋める */
             padding: 0;
             margin: 0;
             cursor: pointer;
@@ -112,13 +113,25 @@
 
         /* 中央投稿ボタン（フッターから飛び出すデザイン） */
         .nav-item.center-btn {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 20px;
+            position: relative;
+            height: 100%;
+            /* 他のアイテムと同じ高さにする */
+            overflow: visible;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            /* 下揃え */
+            padding-bottom: 0;
+            /* 微調整 */
         }
 
         .nav-item.center-btn .circle {
+            position: absolute;
+            bottom: 20px;
+            /* テキストの上に配置 */
+            left: 50%;
+            transform: translateX(-50%);
             width: 60px;
             height: 60px;
             background: linear-gradient(135deg, #FF0055, #FF3366);
@@ -127,7 +140,6 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 4px 15px rgba(255, 0, 85, 0.4);
-            margin-bottom: 4px;
         }
 
         .nav-item.center-btn svg {
@@ -138,7 +150,14 @@
         }
 
         .nav-item.center-btn span {
+            position: static;
+            /* 通常の配置に戻す */
+            transform: none;
             color: #666666;
+            width: auto;
+            text-align: center;
+            margin-top: 34px;
+            /* 円形ボタンのスペースを確保（必要に応じて調整） */
         }
 
 

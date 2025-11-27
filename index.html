@@ -170,6 +170,33 @@
             /* フッターの上 */
             left: 10px;
         }
+
+        /* アクセントカラー (#FF0055) の適用 - 強制上書き */
+        .maplibregl-user-location-dot {
+            background-color: #FF0055 !important;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        .maplibregl-user-location-dot::before {
+            background-color: #FF0055 !important;
+            animation: maplibregl-user-location-dot-pulse 2s infinite !important;
+        }
+
+        .maplibregl-user-location-dot::after {
+            border: 2px solid #ffffff !important;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.35) !important;
+        }
+
+        .maplibregl-user-location-accuracy-circle {
+            background-color: rgba(255, 0, 85, 0.2) !important;
+            border: 1px solid rgba(255, 0, 85, 0.4) !important;
+        }
+
+        /* 現在地ボタンのアクティブ状態 - アイコンの色変更 */
+        .maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-active .maplibregl-ctrl-icon {
+            filter: invert(16%) sepia(88%) saturate(6054%) hue-rotate(334deg) brightness(98%) contrast(108%) !important;
+            /* #FF0055 に近い色への変換フィルター */
+        }
     </style>
 </head>
 
@@ -270,30 +297,30 @@
                     labelLayerId = id;
                 }
 
-                // 1. 背景 (Background)
+                // 1. 背景 (Background) - 完全な純白
                 if (id === 'background') {
-                    map.setPaintProperty(id, 'background-color', '#fafafa');
+                    map.setPaintProperty(id, 'background-color', '#ffffff');
                     console.log('Background styled:', id);
                 }
 
-                // 2. 水域 (Water) - ライトグレー（水色を完全排除）
+                // 2. 水域 (Water) - 非常に薄いグレー
                 if (type === 'fill' && (sourceLayer === 'water' || id.includes('water') || id.includes('Water'))) {
-                    map.setPaintProperty(id, 'fill-color', '#e8e8e8');
+                    map.setPaintProperty(id, 'fill-color', '#eeeeee');
                     console.log('Water layer styled:', id);
                 }
 
-                // 3. 建物 (Building) - より薄いグレー
+                // 3. 建物 (Building) - 極薄グレー、低不透明度
                 if (type === 'fill' && (sourceLayer === 'building' || id.includes('building') || id.includes('Building'))) {
-                    map.setPaintProperty(id, 'fill-color', '#ebebeb');
-                    map.setPaintProperty(id, 'fill-opacity', 0.6);
-                    // 枠線がある場合は薄くする
+                    map.setPaintProperty(id, 'fill-color', '#f2f2f2');
+                    map.setPaintProperty(id, 'fill-opacity', 0.5);
+                    // 枠線を削除または極薄に
                     if (map.getPaintProperty(id, 'fill-outline-color')) {
-                        map.setPaintProperty(id, 'fill-outline-color', '#ebebeb');
+                        map.setPaintProperty(id, 'fill-outline-color', '#f2f2f2');
                     }
                     console.log('Building layer styled:', id);
                 }
 
-                // 4. 緑地/公園 (Green/Landuse) - 背景とほぼ同化（緑色を完全排除）
+                // 4. 緑地/公園 (Green/Landuse) - 背景とほぼ同じ
                 if (type === 'fill' && (
                     sourceLayer === 'landuse' ||
                     sourceLayer === 'landcover' ||
@@ -306,11 +333,11 @@
                     id.includes('wood') ||
                     id.includes('forest')
                 )) {
-                    map.setPaintProperty(id, 'fill-color', '#f0f0f0');
+                    map.setPaintProperty(id, 'fill-color', '#f5f5f5');
                     console.log('Landuse/Green layer styled:', id);
                 }
 
-                // 5. 道路 (Roads) - 純白と極薄グレー
+                // 5. 道路 (Roads) - 白と極薄グレー
                 if (type === 'line' && (
                     sourceLayer === 'transportation' ||
                     sourceLayer === 'road' ||
@@ -319,29 +346,29 @@
                     id.includes('street') ||
                     id.includes('path')
                 )) {
-                    // 道路の縁取り (Casing)
+                    // 道路の縁取り (Casing) - より薄く
                     if (id.includes('casing') || id.includes('outline')) {
-                        map.setPaintProperty(id, 'line-color', '#e5e5e5');
+                        map.setPaintProperty(id, 'line-color', '#ebebeb');
                         console.log('Road casing styled:', id);
                     }
-                    // 道路の埋め色 (Fill)
+                    // 道路の埋め色 (Fill) - 純白
                     else {
                         map.setPaintProperty(id, 'line-color', '#ffffff');
                         console.log('Road fill styled:', id);
                     }
                 }
 
-                // 6. 文字ラベル (Labels/Text) - ミディアムグレー
+                // 6. 文字ラベル (Labels/Text) - より薄いグレー
                 if (type === 'symbol') {
                     if (layer.layout && layer.layout['text-field']) {
-                        map.setPaintProperty(id, 'text-color', '#757575');
+                        map.setPaintProperty(id, 'text-color', '#999999');
                         map.setPaintProperty(id, 'text-halo-color', '#ffffff');
                         map.setPaintProperty(id, 'text-halo-width', 2);
                     }
                 }
             });
 
-            // --- 3D建物レイヤーの追加 (超ミニマル配色: #ebebeb) ---
+            // --- 3D建物レイヤーの追加 (極薄グレー) ---
             map.addSource('force-3d-source', {
                 url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                 type: 'vector'
@@ -355,7 +382,7 @@
                 'type': 'fill-extrusion',
                 'minzoom': 15,
                 'paint': {
-                    'fill-extrusion-color': '#ebebeb', // 超ミニマル配色: #ebebeb
+                    'fill-extrusion-color': '#f2f2f2',
                     'fill-extrusion-height': [
                         "interpolate", ["linear"], ["zoom"],
                         15, 0,
@@ -366,7 +393,7 @@
                         15, 0,
                         15.05, ["get", "min_height"]
                     ],
-                    'fill-extrusion-opacity': 0.6 // 不透明度: 0.6
+                    'fill-extrusion-opacity': 0.5
                 }
             }, labelLayerId);
         });

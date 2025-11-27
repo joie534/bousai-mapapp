@@ -45,6 +45,21 @@
             z-index: 0;
         }
 
+        /* 地図のキャンバス部分だけグレースケール化 */
+        #map .maplibregl-canvas-container,
+        #map .maplibregl-canvas {
+            filter: grayscale(100%) saturate(0%) !important;
+        }
+
+        /* ピン（マーカー）と現在地ドットはカラーを保持 */
+        .maplibregl-marker,
+        .maplibregl-marker svg,
+        .maplibregl-marker path,
+        .maplibregl-user-location-dot,
+        .maplibregl-user-location-accuracy-circle {
+            filter: none !important;
+        }
+
         /* フッターナビゲーション */
         .footer-nav {
             position: fixed;

@@ -272,39 +272,39 @@
 
                 // 1. 背景 (Background)
                 if (id === 'background') {
-                    map.setPaintProperty(id, 'background-color', '#f3f4f6');
+                    map.setPaintProperty(id, 'background-color', '#f4f4f4');
                 }
 
-                // 2. 水域 (Water)
+                // 2. 水域 (Water) - 無機質なライトグレー
                 if (id.includes('water') && type === 'fill') {
-                    map.setPaintProperty(id, 'fill-color', '#e5e7eb');
+                    map.setPaintProperty(id, 'fill-color', '#e3e5e8');
                 }
 
-                // 3. 建物 (Building)
+                // 3. 建物 (Building) - 背景に溶け込む薄いグレー
                 if (sourceLayer === 'building' || id.includes('building')) {
                     if (type === 'fill') {
-                        map.setPaintProperty(id, 'fill-color', '#e5e7eb');
-                        map.setPaintProperty(id, 'fill-opacity', 0.6);
+                        map.setPaintProperty(id, 'fill-color', '#e8e8e8');
+                        map.setPaintProperty(id, 'fill-opacity', 0.8);
                         // 枠線がある場合は薄くする
                         if (map.getPaintProperty(id, 'fill-outline-color')) {
-                            map.setPaintProperty(id, 'fill-outline-color', '#e5e7eb');
+                            map.setPaintProperty(id, 'fill-outline-color', '#e8e8e8');
                         }
                     }
                 }
 
-                // 土地利用（公園など）も背景に馴染ませる
+                // 緑地/公園 (Green/Landuse) - 背景とほぼ同化
                 if (sourceLayer === 'landuse' || id.includes('landuse') || id.includes('park') || id.includes('green')) {
                     if (type === 'fill') {
-                        map.setPaintProperty(id, 'fill-color', '#f3f4f6'); // 背景色と同じにする
+                        map.setPaintProperty(id, 'fill-color', '#edf0f4');
                     }
                 }
 
-                // 4. 道路 (Roads)
+                // 4. 道路 (Roads) - 白と薄いグレー
                 if (sourceLayer === 'transportation') {
                     if (type === 'line') {
                         // 道路の縁取り (Casing)
                         if (id.includes('casing')) {
-                            map.setPaintProperty(id, 'line-color', '#e5e5e5');
+                            map.setPaintProperty(id, 'line-color', '#dcdcdc');
                         }
                         // 道路の埋め色 (Fill)
                         else {
@@ -323,7 +323,7 @@
                 }
             });
 
-            // --- 3D建物レイヤーの追加 (色を #e5e7eb に変更) ---
+            // --- 3D建物レイヤーの追加 (ハイキー配色: #e8e8e8) ---
             map.addSource('force-3d-source', {
                 url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                 type: 'vector'
@@ -337,7 +337,7 @@
                 'type': 'fill-extrusion',
                 'minzoom': 15,
                 'paint': {
-                    'fill-extrusion-color': '#e5e7eb', // 指定色: #e5e7eb
+                    'fill-extrusion-color': '#e8e8e8', // ハイキー配色: #e8e8e8
                     'fill-extrusion-height': [
                         "interpolate", ["linear"], ["zoom"],
                         15, 0,
@@ -348,7 +348,7 @@
                         15, 0,
                         15.05, ["get", "min_height"]
                     ],
-                    'fill-extrusion-opacity': 0.6 // 不透明度: 0.6
+                    'fill-extrusion-opacity': 0.8 // 不透明度: 0.8
                 }
             }, labelLayerId);
         });
